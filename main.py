@@ -9,7 +9,7 @@ os.system(f"title {title}")
 
 load_dotenv()
 token = os.getenv("TOKEN")
-delay = os.getenv("DELAY")
+delay = int(os.getenv("DELAY", 0))
 
 timestamp = (lambda: f"{color('y')}[{color('g')}{time.strftime('%H:%M:%S')}{color('y')}] {color('g')}[{color('y')}●{color('g')}]" + color("z"))
 y_color = f"\x1b[38;2;{random.randint(0,255)};{random.randint(0,255)};{random.randint(0,255)}m"
