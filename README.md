@@ -14,6 +14,11 @@ Put your Discord token inside the `.env` file.
 TOKEN=your_token_here
 ```
 
+### Install The Required Dependencies
+```
+pip install requests dotenv
+```
+
 ## Options
 
 * ### DM Clear
