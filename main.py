@@ -78,7 +78,7 @@ def listing_clear(channel_id, name=None):
                 )
                 if delete.status_code == 204:
                     print(
-                        f"{timestamp()} » Deleted ⇝ {color('y')}[{color('g')}{message['id']}{color('y')}]"
+                        f"{timestamp()} » Deleted → {color('y')}[{color('g')}{message['id']}{color('y')}]"
                     )
                     time.sleep(delay)
                     break
@@ -109,7 +109,7 @@ def search_clear(url):
                     )
                     if delete.status_code == 204:
                         print(
-                            f"{timestamp()} » Deleted ⇝ {color('y')}[{color('g')}{message['id']}{color('y')}]"
+                            f"{timestamp()} » Deleted → {color('y')}[{color('g')}{message['id']}{color('y')}]"
                         )
                         time.sleep(delay)
                         found = True
@@ -142,7 +142,7 @@ def clear_dm():
             else d.get("name", "Unnamed Group")
         )
         print(
-            f"{timestamp()} » Clearing ⇝ {color('y')}[{color('g')}{name}{color('y')}]"
+            f"{timestamp()} » Clearing → {color('y')}[{color('g')}{name}{color('y')}]"
         )
         listing_clear(channel_id, name)
     time.sleep(2)
@@ -152,7 +152,7 @@ def clear_dm():
 
 def listing_clear_chat():
     print(logo)
-    channel_id = input(f"{timestamp()} » Channel ID ⇝ ").strip()
+    channel_id = input(f"{timestamp()} » Channel ID → ").strip()
     clear_cmd()
     print(logo)
     listing_clear(channel_id)
@@ -163,7 +163,7 @@ def listing_clear_chat():
 
 def search_clear_chat():
     print(logo)
-    channel_id = input(f"{timestamp()} » Channel ID ⇝ ").strip()
+    channel_id = input(f"{timestamp()} » Channel ID → ").strip()
     guild = (
         requests.get(
             f"https://discord.com/api/v9/channels/{channel_id}",
@@ -185,7 +185,7 @@ def search_clear_chat():
 
 def guild_clear():
     print(logo)
-    guild_id = input(f"{timestamp()} » Guild ID ⇝ ").strip()
+    guild_id = input(f"{timestamp()} » Guild ID → ").strip()
     clear_cmd()
     print(logo)
     search_clear(
@@ -200,13 +200,13 @@ def main():
     clear_cmd()
     print(logo)
     print(
-        f"{timestamp()} » Welcome ⇝ {color('y')}[{color('g')}{username}{color('y')}]\n"
-        f"{timestamp()} » {color('y')}[{color('g')}1{color('y')}] {color('z')}DM Clear ⇝ {color('y')}[{color('g')}Listing{color('y')}]\n"
-        f"{timestamp()} » {color('y')}[{color('g')}2{color('y')}] {color('z')}Chat Clear ⇝ {color('y')}[{color('g')}Listing{color('y')}]\n"
-        f"{timestamp()} » {color('y')}[{color('g')}3{color('y')}] {color('z')}Chat Clear ⇝ {color('y')}[{color('g')}Search{color('y')}]\n"
-        f"{timestamp()} » {color('y')}[{color('g')}4{color('y')}] {color('z')}Guild Clear ⇝ {color('y')}[{color('g')}Search{color('y')}]"
+        f"{timestamp()} » Welcome → {color('y')}[{color('g')}{username}{color('y')}]\n"
+        f"{timestamp()} » {color('y')}[{color('g')}1{color('y')}] {color('z')}DM Clear → {color('y')}[{color('g')}Listing{color('y')}]\n"
+        f"{timestamp()} » {color('y')}[{color('g')}2{color('y')}] {color('z')}Chat Clear → {color('y')}[{color('g')}Listing{color('y')}]\n"
+        f"{timestamp()} » {color('y')}[{color('g')}3{color('y')}] {color('z')}Chat Clear → {color('y')}[{color('g')}Search{color('y')}]\n"
+        f"{timestamp()} » {color('y')}[{color('g')}4{color('y')}] {color('z')}Guild Clear → {color('y')}[{color('g')}Search{color('y')}]"
     )
-    ch = input(f"{timestamp()} » Choose ⇝ ").strip()
+    ch = input(f"{timestamp()} » Choose → ").strip()
     clear_cmd()
     {
         "1": clear_dm,
