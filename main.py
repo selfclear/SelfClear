@@ -5,7 +5,7 @@ import time
 import random
 from dotenv import load_dotenv
 
-title = "Romania Self Clear"
+title = "Romania"
 os.system(f"title {title}")
 
 load_dotenv()
@@ -20,10 +20,14 @@ color = lambda n: {
     "y": y_color,
 }.get(n, "\x1b[0m")
 
-timestamp = lambda: f"{color('y')}[{color('g')}{time.strftime('%H:%M:%S')}{color('y')}] {color('g')}[{color('y')}●{color('g')}] {color('z')}"
+timestamp = (
+    lambda: f"{color('y')}[{color('g')}{time.strftime('%H:%M:%S')}{color('y')}] {color('g')}[{color('y')}●{color('g')}] {color('z')}"
+)
+
 
 def clear_cmd():
     os.system("cls" if os.name == "nt" else "clear")
+
 
 logo = """
                                  ██████╗  █████╗ ███╗   ███╗ █████╗ ███╗  ██╗██╗ █████╗ 
@@ -41,7 +45,13 @@ semaphore = asyncio.Semaphore(5)
 
 def system_message(m):
     return m.get("author", {}).get("id") == user_id and m.get("type", 0) not in [
-        3, 4, 6, 12, 13, 24, 25
+        3,
+        4,
+        6,
+        12,
+        13,
+        24,
+        25,
     ]
 
 
@@ -52,24 +62,38 @@ async def delete_message(session, channel_id, message_id):
                 f"https://discord.com/api/v9/channels/{channel_id}/messages/{message_id}",
                 headers={"Authorization": token},
             ) as resp:
-
+                
                 if resp.status == 204:
-                    print(f"{timestamp()} » Deleted → {color('y')}[{color('g')}{message_id}{color('y')}]")
+                    print(
+                        f"{timestamp()} » Deleted → {color('y')}[{color('g')}{message_id}{color('y')}]"
+                    )
                     await asyncio.sleep(delay)
                     return
-
                 elif resp.status == 429:
                     await asyncio.sleep(1)
-
                 else:
                     return
 
 
+async def process_messages(session, channel_id, messages):
+    tasks = []
+    for message in messages:
+        if not system_message(message):
+            continue
+
+        tasks.append(
+            asyncio.create_task(delete_message(session, channel_id, message["id"]))
+        )
+
+    if tasks:
+        await asyncio.gather(*tasks)
+
+
 async def listing_clear(session, channel_id):
     before = None
-
     while True:
         params = {"limit": 100}
+
         if before:
             params["before"] = before
 
@@ -87,70 +111,60 @@ async def listing_clear(session, channel_id):
         if not messages:
             break
 
-        tasks = []
+        before = messages[-1]["id"]
+        asyncio.create_task(process_messages(session, channel_id, messages))
 
-        for message in messages:
-            before = message["id"]
 
-            if not system_message(message):
-                continue
+async def process_search_group(session, group):
+    tasks = []
+    for message in group:
+        if not system_message(message):
+            continue
 
-            tasks.append(
-                asyncio.create_task(
-                    delete_message(session, channel_id, message["id"])
-                )
+        tasks.append(
+            asyncio.create_task(
+                delete_message(session, message["channel_id"], message["id"])
             )
+        )
 
-        if tasks:
-            await asyncio.gather(*tasks)
+    if tasks:
+        await asyncio.gather(*tasks)
 
 
 async def search_clear(session, url):
-    off = 0
-
     while True:
-        async with session.get(
-            f"{url}&offset={off}",
-            headers={"Authorization": token},
-        ) as resp:
+        off = 0
+        found_any = False
 
-            if resp.status != 200:
+        while True:
+            async with session.get(
+                f"{url}&offset={off}",
+                headers={"Authorization": token},
+            ) as resp:
+                if resp.status != 200:
+                    return
+
+                data = await resp.json()
+
+            groups = data.get("messages", [])
+            if not groups:
                 break
 
-            data = await resp.json()
+            tasks = []
 
-        groups = data.get("messages", [])
-        if not groups:
+            for group in groups:
+                tasks.append(asyncio.create_task(process_search_group(session, group)))
+                for message in group:
+                    if system_message(message):
+                        found_any = True
+
+            if tasks:
+                await asyncio.gather(*tasks)
+
+            off += 25
+
+        if not found_any:
             break
-
-        tasks = []
-        found = False
-
-        for group in groups:
-            for message in group:
-
-                if not system_message(message):
-                    continue
-
-                tasks.append(
-                    asyncio.create_task(
-                        delete_message(
-                            session,
-                            message["channel_id"],
-                            message["id"],
-                        )
-                    )
-                )
-
-                found = True
-
-        if tasks:
-            await asyncio.gather(*tasks)
-
-        if not found:
-            break
-
-        off += 25
 
 
 async def clear_dm(session):
@@ -164,20 +178,22 @@ async def clear_dm(session):
 
     channels = [d for d in channels if d.get("type") in (1, 3)]
     random.shuffle(channels)
+    tasks = []
 
     for d in channels:
-
         channel_id = d["id"]
-
         name = (
             d.get("recipients", [{}])[0].get("username")
             if d["type"] == 1
             else d.get("name", "Unnamed Group")
         )
+        print(
+            f"{timestamp()} » Clearing → {color('y')}[{color('g')}{name}{color('y')}]"
+        )
+        tasks.append(asyncio.create_task(listing_clear(session, channel_id)))
 
-        print(f"{timestamp()} » Clearing → {color('y')}[{color('g')}{name}{color('y')}]")
-
-        await listing_clear(session, channel_id)
+    if tasks:
+        await asyncio.gather(*tasks)
 
     await asyncio.sleep(2)
     clear_cmd()
@@ -185,31 +201,28 @@ async def clear_dm(session):
 
 async def listing_clear_chat(session):
     print(logo)
-
     channel_id = input(f"{timestamp()} » Channel ID → ").strip()
 
     clear_cmd()
     print(logo)
 
     await listing_clear(session, channel_id)
-
     await asyncio.sleep(2)
     clear_cmd()
 
 
 async def search_clear_chat(session):
     print(logo)
-
     channel_id = input(f"{timestamp()} » Channel ID → ").strip()
 
     async with session.get(
         f"https://discord.com/api/v9/channels/{channel_id}",
         headers={"Authorization": token},
     ) as resp:
+
         data = await resp.json()
 
     guild = data.get("guild_id")
-
     url = f"https://discord.com/api/v9/{'guilds/' + guild if guild else 'channels/' + channel_id}/messages/search?author_id={user_id}"
 
     if guild:
@@ -219,14 +232,12 @@ async def search_clear_chat(session):
     print(logo)
 
     await search_clear(session, url)
-
     await asyncio.sleep(2)
     clear_cmd()
 
 
 async def guild_clear(session):
     print(logo)
-
     guild_id = input(f"{timestamp()} » Guild ID → ").strip()
 
     clear_cmd()
@@ -242,25 +253,22 @@ async def guild_clear(session):
 
 
 async def main():
-
     global user_id, username
-
     async with aiohttp.ClientSession() as session:
 
         async with session.get(
             "https://discord.com/api/v9/users/@me",
             headers={"Authorization": token},
         ) as resp:
+
             client = await resp.json()
 
         user_id = client["id"]
         username = client["username"]
 
         while True:
-
             clear_cmd()
             print(logo)
-
             print(
                 f"{timestamp()} » Welcome → {color('y')}[{color('g')}{username}{color('y')}]\n"
                 f"{timestamp()} » {color('y')}[{color('g')}1{color('y')}] {color('z')}DM Clear → {color('y')}[{color('g')}Listing{color('y')}]\n"
@@ -270,18 +278,14 @@ async def main():
             )
 
             ch = input(f"{timestamp()} » Choose → ").strip()
-
             clear_cmd()
 
             if ch == "1":
                 await clear_dm(session)
-
             elif ch == "2":
                 await listing_clear_chat(session)
-
             elif ch == "3":
                 await search_clear_chat(session)
-
             elif ch == "4":
                 await guild_clear(session)
 
