@@ -12,16 +12,14 @@ load_dotenv()
 token = os.getenv("TOKEN")
 delay = int(os.getenv("DELAY", 0))
 
-y_color = f"\x1b[38;2;{random.randint(0,255)};{random.randint(0,255)};{random.randint(0,255)}m"
-
 color = lambda n: {
     "z": "\x1b[0m",
-    "g": "\x1b[38;2;56;72;83m",
-    "y": y_color,
+    "g": "\x1b[38;2;43;43;43m",
+    "y": "\x1b[38;2;102;102;102m",
 }.get(n, "\x1b[0m")
 
 timestamp = (
-    lambda: f"{color('y')}[{color('g')}{time.strftime('%H:%M:%S')}{color('y')}] {color('g')}[{color('y')}●{color('g')}] {color('z')}"
+    lambda: f"{color('y')}[{color('g')}{time.strftime('%H:%M:%S')}{color('y')}] {color('g')}[{color('y')}●{color('g')}]{color('z')}"
 )
 
 
@@ -121,7 +119,6 @@ async def listing_clear(session, channel_id):
 
         await process_messages(session, channel_id, messages)
 
-        # אם לא מצאנו אף הודעה שלך ב-batch הזה, כנראה אין יותר
         if not found:
             break
 
