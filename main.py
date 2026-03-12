@@ -62,7 +62,7 @@ async def delete_message(session, channel_id, message_id):
                 f"https://discord.com/api/v9/channels/{channel_id}/messages/{message_id}",
                 headers={"Authorization": token},
             ) as resp:
-                
+
                 if resp.status == 204:
                     print(
                         f"{timestamp()} » Deleted → {color('y')}[{color('g')}{message_id}{color('y')}]"
@@ -91,6 +91,8 @@ async def process_messages(session, channel_id, messages):
 
 async def listing_clear(session, channel_id):
     before = None
+    deleted_any = False
+
     while True:
         params = {"limit": 100}
 
@@ -112,7 +114,18 @@ async def listing_clear(session, channel_id):
             break
 
         before = messages[-1]["id"]
-        asyncio.create_task(process_messages(session, channel_id, messages))
+
+        found = any(system_message(m) for m in messages)
+        if found:
+            deleted_any = True
+
+        await process_messages(session, channel_id, messages)
+
+        # אם לא מצאנו אף הודעה שלך ב-batch הזה, כנראה אין יותר
+        if not found:
+            break
+
+    return deleted_any
 
 
 async def process_search_group(session, group):
@@ -178,25 +191,35 @@ async def clear_dm(session):
 
     channels = [d for d in channels if d.get("type") in (1, 3)]
     random.shuffle(channels)
-    tasks = []
 
     for d in channels:
         channel_id = d["id"]
-        name = (
-            d.get("recipients", [{}])[0].get("username")
-            if d["type"] == 1
-            else d.get("name", "Unnamed Group")
-        )
+
+        name = None
+
+        if d["type"] == 1:
+            name = d.get("recipients", [{}])[0].get("username")
+
+        elif d["type"] == 3:
+            if d.get("name"):
+                name = d["name"]
+            else:
+                users = [u.get("username", "Unknown") for u in d.get("recipients", [])]
+                name = ", ".join(users)
+
+        if not name:
+            name = "Unknown"
+
         print(
             f"{timestamp()} » Clearing → {color('y')}[{color('g')}{name}{color('y')}]"
         )
-        tasks.append(asyncio.create_task(listing_clear(session, channel_id)))
 
-    if tasks:
-        await asyncio.gather(*tasks)
+        deleted = await listing_clear(session, channel_id)
 
-    await asyncio.sleep(2)
-    clear_cmd()
+        if deleted:
+            pass
+        else:
+            pass
 
 
 async def listing_clear_chat(session):
