@@ -16,7 +16,7 @@ TOKEN=your_token_here
 
 ### Install The Required Dependencies:
 ```
-pip install requests dotenv
+pip install aiohttp python-dotenv
 ```
 
 ## Options
